@@ -50,6 +50,12 @@ void sr_init(struct sr_instance* sr)
 
 } /* -- sr_init -- */
 
+/* Implicit definitions to silence warnings */
+
+void handle_arp_packet(struct sr_if* iface, uint8_t* packet, int len);
+void handle_arp_request(struct sr_if *iface, sr_arp_hdr_t *hdr);
+void handle_arp_reply(sr_arp_hdr_t *hdr);
+
 /*---------------------------------------------------------------------
  * Method: sr_handlepacket(uint8_t* p,char* interface)
  * Scope:  Global
@@ -66,6 +72,7 @@ void sr_init(struct sr_instance* sr)
  *
  *---------------------------------------------------------------------*/
 
+
 void sr_handlepacket(struct sr_instance* sr,
         uint8_t * packet/* lent */,
         unsigned int len,
@@ -77,8 +84,116 @@ void sr_handlepacket(struct sr_instance* sr,
   assert(interface);
 
   printf("*** -> Received packet of length %d \n",len);
+  sr_ethernet_hdr_t *ethernet_hdr = (sr_ethernet_hdr_t *) packet;
+  struct sr_if* iface = sr_get_interface(sr, interface);
+  print_addr_ip_int(ntohl(iface->ip));
 
-  /* fill in code here */
+  /* TODO: check dest MAC address lines up? */
+  
+  /* arp handling */
+  if ( ntohs(ethernet_hdr->ether_type) == ethertype_arp ) {
+      printf("Detected ARP packet\n");
+      uint8_t *arp_packet = packet + sizeof(sr_ethernet_hdr_t);
+      handle_arp_packet(iface, arp_packet, len - sizeof(sr_ethernet_hdr_t));
+  } 
+
+  /* ip handling */
+  else if ( ntohs(ethernet_hdr->ether_type) == ethertype_ip ) {
+      printf("Detected IP packet\n");
+  }
+
+  else {
+      printf("Unknown ethernet header type");
+      return;
+  }
 
 }/* end sr_ForwardPacket */
 
+/*---------------------------------------------------------------------
+ * Method: hande_ip_packet(uint8_t* p,char* interface)
+ * Scope: Local 
+ *
+ *---------------------------------------------------------------------*/
+
+void handle_ip_packet(uint8_t* packet, int len)
+{
+}
+
+/*---------------------------------------------------------------------
+ * Method: hande_arp_packet(uint8_t* p,char* interface)
+ * Scope: Local 
+ *
+ *---------------------------------------------------------------------*/
+
+
+void handle_arp_packet(struct sr_if *iface, uint8_t *packet, int len)
+{
+    print_hdr_arp(packet);
+    sr_arp_hdr_t *hdr = (sr_arp_hdr_t *)packet;    
+
+    if (ntohs(hdr->ar_op) == arp_op_request) {
+        printf("ARP Request\n");
+        handle_arp_request(iface, hdr);
+    } else if (ntohs(hdr->ar_op) == arp_op_reply) {
+        printf("ARP Reply\n");
+        handle_arp_reply(hdr);
+    } else {
+        printf("Unrecognized arp oper\n");
+    }
+}
+
+/*---------------------------------------------------------------------
+ * Method: hande_arp_request(uint8_t* p,char* interface)
+ * Scope: Local 
+ *
+ *---------------------------------------------------------------------*/
+
+void handle_arp_request(struct sr_if *iface, sr_arp_hdr_t *hdr)
+{
+    /* compare target address to our address (both are in NETWORK order) */
+    if ( iface->ip == hdr->ar_tip ) {
+        printf("Address match\n");
+
+        /* create a copy of the arp header to send back */ 
+        sr_arp_hdr_t *resp = (sr_arp_hdr_t *) malloc (sizeof(sr_arp_hdr_t));
+
+    /* unsigned short  ar_hrd;             #<{(| format of hardware address   |)}># */
+    /* unsigned short  ar_pro;             #<{(| format of protocol address   |)}># */
+    /* unsigned char   ar_hln;             #<{(| length of hardware address   |)}># */
+    /* unsigned char   ar_pln;             #<{(| length of protocol address   |)}># */
+    /* unsigned short  ar_op;              #<{(| ARP opcode (command)         |)}># */
+    /* unsigned char   ar_sha[ETHER_ADDR_LEN];   #<{(| sender hardware address      |)}># */
+    /* uint32_t        ar_sip;             #<{(| sender IP address            |)}># */
+    /* unsigned char   ar_tha[ETHER_ADDR_LEN];   #<{(| target hardware address      |)}># */
+    /* uint32_t        ar_tip;             #<{(| target IP address            |)}># */
+
+        /* length/format of addresses is the same */
+        resp->ar_hrd = hdr->ar_hrd;
+        resp->ar_pro = hdr->ar_pro;
+        resp->ar_hln = hdr->ar_hln;
+        resp->ar_pln = hdr->ar_pln;
+
+        /* this should be a reply, not request */
+        resp->ar_op = arp_op_reply;
+
+        /* reverse the direction */
+        resp->ar_sha = hdr->tha; 
+        resp->ar_sip = iface->ip; 
+        resp->ar_tha = hdr->sha; 
+        resp->ar_tip = hdr->sip; 
+
+    } else {
+        printf("No address match\n");
+        print_addr_ip_int(ntohl(hdr->ar_tip));
+    }
+}
+
+/*---------------------------------------------------------------------
+ * Method: hande_arp_reply(uint8_t* p,char* interface)
+ * Scope: Local 
+ *
+ *---------------------------------------------------------------------*/
+
+void handle_arp_reply(sr_arp_hdr_t *hdr)
+{
+}

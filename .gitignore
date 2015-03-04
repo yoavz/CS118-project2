@@ -2,3 +2,8 @@ index.html
 index.html.*
 pox_module
 pox
+
+*.o
+.*.d
+tags
+sr
