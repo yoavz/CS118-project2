@@ -4,7 +4,6 @@
 #include "sr_protocol.h"
 #include "sr_utils.h"
 
-
 uint16_t cksum (const void *_data, int len) {
   const uint8_t *data = _data;
   uint32_t sum;
@@ -19,6 +18,41 @@ uint16_t cksum (const void *_data, int len) {
   return sum ? sum : 0xffff;
 }
 
+/*
+ * Returns true if the pkt checksum checks out
+ */
+
+bool ip_cksum(const uint8_t *pkt) {
+  
+  /* HL is number of 32 bit (4 byte) words in the packet */
+  /* NOTE- it is NOT in network order. why? */
+  int len = ((sr_ip_hdr_t *)pkt)->ip_hl * 4;
+  /* printf("%d\n", len); */
+
+  uint8_t *pkt_cpy = (uint8_t *) malloc (len); 
+  memcpy( pkt_cpy, pkt, len );
+  sr_ip_hdr_t *ip_hdr = (sr_ip_hdr_t *)pkt_cpy; 
+  uint16_t hdr_cksum = ip_hdr->ip_sum;
+  ip_hdr->ip_sum = 0;
+  uint16_t calculated_cksum = cksum(pkt_cpy, len);
+
+  return hdr_cksum == calculated_cksum;
+}
+
+/* 
+ * Returns the network mask length
+ *  example: 1111000...0 -> 4
+ *  
+ *  note this is HOST not NETWORK order
+ */
+
+int network_mask_len(uint32_t mask) 
+{
+  int mask_len = 0;
+  while ( mask_len < 32 && (mask & (1 << (32-(mask_len+1)))) )
+    mask_len++;
+  return mask_len;
+}
 
 uint16_t ethertype(uint8_t *buf) {
   sr_ethernet_hdr_t *ehdr = (sr_ethernet_hdr_t *)buf;
