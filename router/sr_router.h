@@ -67,6 +67,13 @@ int sr_read_from_server(struct sr_instance* );
 /* -- sr_router.c -- */
 void sr_init(struct sr_instance* );
 void sr_handlepacket(struct sr_instance* , uint8_t * , unsigned int , char* );
+void send_arp_request(struct sr_instance *sr, 
+                      uint32_t target_ip, /* for consistency, target ip should be in host order */
+                      char *interface);
+void send_icmp_t3(struct sr_instance *sr,
+                  uint8_t *packet,
+                  char *interface,
+                  int code);
 
 /* -- sr_if.c -- */
 void sr_add_interface(struct sr_instance* , const char* );

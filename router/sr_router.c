@@ -71,16 +71,9 @@ void process_icmp(struct sr_instance *sr,
                   uint8_t *packet,
                   int icmp_length,
                   char *interface);
-void send_icmp_t3(struct sr_instance *sr,
-                  uint8_t *packet,
-                  char *interface,
-                  int code);
 void send_icmp_time_exceeded(struct sr_instance *sr,
                   uint8_t *packet,
                   char *interface);
-void send_arp_request(struct sr_instance *sr, 
-                      uint32_t target_ip, /* for consistency, target ip should be in host order */
-                      char *interface);
 
 /*---------------------------------------------------------------------
  * Method: sr_handlepacket(uint8_t* p,char* interface)
@@ -154,14 +147,6 @@ struct sr_rt *find_rt(struct sr_instance *sr, uint32_t ip)
   for (curr = sr->routing_table; curr != NULL; curr = curr->next)
   {
     /* if the prefix is longer and it matches */
-    /* printf("ip to match:\n"); */
-    /* print_addr_ip_int(ip); */
-    /* printf("current address: \n"); */
-    /* print_addr_ip_int(ntohl(curr->dest.s_addr)); */
-    /* printf("network mask: \n"); */
-    /* print_addr_ip_int(ntohl(curr->mask.s_addr)); */
-    /* printf("network mask len: %d\n", network_mask_len(ntohl(curr->mask.s_addr))); */
-    /* printf("\n"); */
 
     if (network_mask_len(ntohl(curr->mask.s_addr)) > longestPrefix &&
         ((ntohl(ip) & ntohl(curr->mask.s_addr)) == (ntohl(curr->dest.s_addr) & ntohl(curr->mask.s_addr))))
@@ -354,7 +339,7 @@ void process_icmp(struct sr_instance *sr,
 
 /*---------------------------------------------------------------------
  * Method: send_icmp_t3 
- * Scope: Local 
+ * Scope: Global 
  *
  * Sends an icmp message type 3 with the specified code in response to the 
  * provided packet
@@ -599,7 +584,7 @@ void handle_arp_reply(struct sr_instance *sr,
 
 /*---------------------------------------------------------------------
  * Method: send_arp_request
- * Scope: Local 
+ * Scope: Global 
  *
  *---------------------------------------------------------------------*/
 

@@ -17,7 +17,36 @@
   See the comments in the header file for an idea of what it should look like.
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
-    /* Fill this in */
+  struct sr_arpreq *curr;
+
+  for ( curr = sr->cache.requests; curr != NULL; curr = curr->next ) {
+
+    if (curr->packets == NULL) {
+      printf("WARNING: Found request in queue that has no packets waiting on it\n");
+      return;
+    }
+
+    /* If the request hasn't been sent 5 times already */
+    if (curr->times_sent < 5) {
+      send_arp_request(sr, curr->ip, curr->packets->iface);
+      curr->times_sent++;
+    }
+
+    /* Otherwise, give up and send a destination unreachable to all packets */
+    else {
+      struct sr_packet *curr_packet;
+      int counter = 0;
+      printf("ARP Reqeust timeout, sending ICMP Destination Host Unreachable to all waiting packets\n");
+
+      for (curr_packet = curr->packets; curr_packet != NULL; curr_packet = curr_packet->next) {
+        send_icmp_t3(sr, curr_packet->buf, curr_packet->iface, 1); 
+        counter++;
+      }
+
+      printf("Sent to %d packets", counter);
+      return;
+    }
+  }
 }
 
 /* You should not need to touch the rest of this code. */
