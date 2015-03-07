@@ -229,7 +229,7 @@ void handle_ip_packet(struct sr_instance *sr,
 
   /* needs to be forwarded to another router */
   else {
-    printf("Forwarding to (not fully implemented): \n");
+    printf("Forwarding to:\n");
     print_addr_ip_int(ntohl(ip_hdr->ip_dst));
     /* printf("\n"); */
     
@@ -260,7 +260,7 @@ void handle_ip_packet(struct sr_instance *sr,
 
     /* use ARP to look up the dest MAC */
     struct sr_arpentry *arp_entry;
-    if ((arp_entry = sr_arpcache_lookup(&sr->cache, rt_entry->dest.s_addr)) == NULL) {
+    if ((arp_entry = sr_arpcache_lookup(&sr->cache, next_hop_ip)) == NULL) {
       /* no ARP entry found, add the packet to the queue */
       struct sr_arpreq *arp_req = sr_arpcache_queuereq(&sr->cache, 
                                                        next_hop_ip,
@@ -282,7 +282,7 @@ void handle_ip_packet(struct sr_instance *sr,
     } else {
       /* ARP found, forward the IP Packet */
       memcpy(eth_hdr->ether_dhost, arp_entry->mac, ETHER_ADDR_LEN);
-      sr_send_packet(sr, (uint8_t *) packet, sizeof(sr_ethernet_hdr_t) + ip_pkt_len, interface);
+      sr_send_packet(sr, (uint8_t *) packet, sizeof(sr_ethernet_hdr_t) + ip_pkt_len, rt_entry->interface);
       printf("Found ARP entry, forwarded immediately\n");
       free(arp_entry);
     }
@@ -587,6 +587,8 @@ void handle_arp_reply(struct sr_instance *sr,
 
       /* TODO: free */
     }
+
+    sr_arpreq_destroy(&sr->cache, arp_req);
 
     printf("Sent %d packet(s) waiting on that ARP Request\n", counter);
 
