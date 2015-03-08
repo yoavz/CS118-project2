@@ -185,9 +185,6 @@ void handle_ip_packet(struct sr_instance *sr,
   uint8_t *ip_pkt = packet + sizeof(sr_ethernet_hdr_t);
   sr_ip_hdr_t *ip_hdr = (sr_ip_hdr_t *) ip_pkt;
   int ip_pkt_len = ntohs(ip_hdr->ip_len);
-  /* printf("ip header len: %d\n", ntoip_hdr->ip_hl); */
-  /* printf("icmp header len: %d\n", sizeof(sr_icmp_hdr_t)); */
-  /* printf("icmp3 header len: %d\n", sizeof(sr_icmp_t3_hdr_t)); */
 
   if (!ip_cksum(ip_pkt)) {
     printf("IP checksum failed, dropping packet\n");  
@@ -206,7 +203,7 @@ void handle_ip_packet(struct sr_instance *sr,
     else {
       printf("packet is not ICMP type, sending port unreachable\n");
       /* TODO: causes a malloc error, why? */
-      /* send_icmp_t3(sr, packet, interface, 3); */
+      send_icmp_t3(sr, packet, interface, 3);
       return;
     }
 
@@ -220,6 +217,7 @@ void handle_ip_packet(struct sr_instance *sr,
     
     /* decrease TTL by 1 */
     if (--ip_hdr->ip_ttl <= 0) {
+      printf("TTL expired, sending ICMP Time Exceeded\n");
       send_icmp_time_exceeded(sr, packet, interface);
       return;
     } 
@@ -269,7 +267,7 @@ void handle_ip_packet(struct sr_instance *sr,
       memcpy(eth_hdr->ether_dhost, arp_entry->mac, ETHER_ADDR_LEN);
       sr_send_packet(sr, (uint8_t *) packet, sizeof(sr_ethernet_hdr_t) + ip_pkt_len, rt_entry->interface);
       printf("Found ARP entry, forwarded immediately\n");
-      free(arp_entry);
+      /* free(arp_entry); */
     }
   }
 }
@@ -334,7 +332,7 @@ void process_icmp(struct sr_instance *sr,
 
   printf("Sent ICMP echo reply\n");
 
-  free(resp);
+  /* free(resp); */
 }
 
 /*---------------------------------------------------------------------
@@ -356,7 +354,7 @@ void send_icmp_t3(struct sr_instance *sr,
   uint8_t *resp = (uint8_t *) malloc (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
   sr_ethernet_hdr_t *resp_eth_hdr = (sr_ethernet_hdr_t *) resp; 
   sr_ip_hdr_t *resp_ip_hdr = (sr_ip_hdr_t *) (resp + sizeof(sr_ethernet_hdr_t));
-  sr_icmp_t3_hdr_t *resp_icmp_hdr = (sr_icmp_t3_hdr_t *) resp + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
+  sr_icmp_t3_hdr_t *resp_icmp_hdr = (sr_icmp_t3_hdr_t *) (resp + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
   /* eth header */
   memcpy( resp_eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN ); 
@@ -371,7 +369,7 @@ void send_icmp_t3(struct sr_instance *sr,
 
   /* the data field of the icmp contains the entire IP header and
    * first 8 bytes of the payload that caused the error message */
-  /* memcpy( resp_icmp_hdr->data, ((uint8_t *) ip_hdr), ICMP_DATA_SIZE ); */
+  memcpy( resp_icmp_hdr->data, ((uint8_t *) ip_hdr), ICMP_DATA_SIZE );
 
   /* ip header */
   resp_ip_hdr->ip_v = 4; /* IPv4 */
@@ -423,7 +421,7 @@ void send_icmp_time_exceeded(struct sr_instance *sr,
   uint8_t *resp = (uint8_t *) malloc (sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t));
   sr_ethernet_hdr_t *resp_eth_hdr = (sr_ethernet_hdr_t *) resp; 
   sr_ip_hdr_t *resp_ip_hdr = (sr_ip_hdr_t *) (resp + sizeof(sr_ethernet_hdr_t));
-  sr_icmp_t3_hdr_t *resp_icmp_hdr = (sr_icmp_t3_hdr_t *) resp + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
+  sr_icmp_t3_hdr_t *resp_icmp_hdr = (sr_icmp_t3_hdr_t *) (resp + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
 
   /* eth header */
   memcpy( resp_eth_hdr->ether_dhost, eth_hdr->ether_shost, ETHER_ADDR_LEN ); 
@@ -621,6 +619,6 @@ void send_arp_request(struct sr_instance *sr,
     /* send the packet */
     sr_send_packet(sr, req, sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t), interface);
 
-    free(req);
+    /* free(req); */
 }
 
