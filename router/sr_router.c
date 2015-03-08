@@ -109,8 +109,6 @@ void sr_handlepacket(struct sr_instance* sr,
   /* printf("*** -> Received packet of length %d \n",len); */
   sr_ethernet_hdr_t *eth_hdr = (sr_ethernet_hdr_t *) packet_cpy;
 
-  /* TODO: check dest MAC address lines up? */
-  
   /* arp handling */
   switch( ntohs(eth_hdr->ether_type) ) {
 
@@ -202,7 +200,6 @@ void handle_ip_packet(struct sr_instance *sr,
 
     else {
       printf("packet is not ICMP type, sending port unreachable\n");
-      /* TODO: causes a malloc error, why? */
       send_icmp_t3(sr, packet, interface, 3);
       return;
     }
@@ -307,7 +304,7 @@ void process_icmp(struct sr_instance *sr,
   resp_ip_hdr->ip_hl = 5; /* minimum header length */
   resp_ip_hdr->ip_tos = ip_hdr->ip_tos; 
   resp_ip_hdr->ip_off = htons(IP_DF);
-  resp_ip_hdr->ip_len = htons((uint16_t) sizeof(sr_ip_hdr_t) + icmp_length); /* TODO: check this? */ 
+  resp_ip_hdr->ip_len = htons((uint16_t) sizeof(sr_ip_hdr_t) + icmp_length); 
   resp_ip_hdr->ip_id = htons(IP_ID++);
   resp_ip_hdr->ip_ttl = 64;
   resp_ip_hdr->ip_p = ip_protocol_icmp;
