@@ -359,7 +359,7 @@ void send_icmp_t3(struct sr_instance *sr,
   resp_eth_hdr->ether_type = htons(ethertype_ip);
 
   /* icmp header */
-  resp_icmp_hdr->icmp_type = 1;
+  resp_icmp_hdr->icmp_type = 3;
   resp_icmp_hdr->icmp_code = code;
   resp_icmp_hdr->unused = 0; /* these two fields aren't used */
   resp_icmp_hdr->next_mtu = 0; /* fill with 0's to standardize */
@@ -387,10 +387,6 @@ void send_icmp_t3(struct sr_instance *sr,
   /* ip cksum is it's header */
   resp_ip_hdr->ip_sum = 0;
   resp_ip_hdr->ip_sum = cksum( (uint8_t *)resp_ip_hdr, sizeof(sr_ip_hdr_t) );
-
-  /* print_hdr_eth(resp_eth_hdr); */
-  /* print_hdr_ip(resp_ip_hdr); */
-  /* print_hdr_icmp(resp_icmp_hdr); */
 
   sr_send_packet(sr, resp, sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t), interface);
 
