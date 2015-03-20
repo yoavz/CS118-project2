@@ -1,0 +1,16 @@
+Project 2 
+=========
+
+This project was completed by Yoav Zimmerman and Noah Hadfield-Menell
+
+Yoav Zimmerman completed the code required for the ARP requests and reply's. 
+This includes all the code that handles placing packets in queue's when they're 
+waiting on a given ARP reply to come in and the code that sends them once the
+ARP reply comes in.
+
+Noah Hadfield-Menell completed the code that creates and sends ICMP protocol 
+messages of different types. In addition, he wrote the business logic that
+decides when to send what type of ICMP message. 
+
+Together, they plugged the rest of the business logic required for the router.
+In total, approximately 15-20 hours were spent working on this project
